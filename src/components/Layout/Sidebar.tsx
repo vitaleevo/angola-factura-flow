@@ -6,7 +6,8 @@ import {
   Package, 
   Settings, 
   Cloud,
-  CreditCard
+  CreditCard,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,9 +16,10 @@ const navigation = [
   { name: "Documentos", href: "/documentos", icon: FileText },
   { name: "Clientes", href: "/clientes", icon: Users },
   { name: "Produtos", href: "/produtos", icon: Package },
-  { name: "Pagamentos", href: "/pagamentos", icon: CreditCard },
-  { name: "Sincronização AGT", href: "/agt", icon: Cloud },
-  { name: "Configurações", href: "/configuracoes", icon: Settings },
+    { name: "Pagamentos", href: "/pagamentos", icon: CreditCard },
+    { name: "Sincronização AGT", href: "/agt", icon: Cloud },
+    { name: "Centro de Erros", href: "/centro-erros", icon: AlertCircle },
+    { name: "Configurações", href: "/configuracoes", icon: Settings },
 ];
 
 export const Sidebar = () => {
