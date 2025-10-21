@@ -1,73 +1,87 @@
-# Welcome to your Lovable project
+# eFactura AO Monorepo
 
-## Project info
+Este repositório contém um monorepo simples com dois projectos irmãos:
 
-**URL**: https://lovable.dev/projects/f8345743-967d-44c6-ad33-3f76d0dd37b6
+- `backend/` — stubs e instruções para um backend Laravel 11 responsável pela emissão, submissão e monitorização das
+  faturas enviadas à AGT.
+- `web/` — PWA construído com Next.js 14 que funciona offline através de IndexedDB/Dexie e sincronização em segundo plano.
 
-## How can I edit this code?
+> **Nota sobre dependências**
+> O ambiente usado para preparar este commit não possui acesso à internet para descarregar pacotes PHP ou NPM. Execute os
+> comandos listados abaixo no seu ambiente local para completar a configuração.
 
-There are several ways of editing your application.
+## Backend (Laravel 11)
 
-**Use Lovable**
+1. Criar o projecto Laravel base dentro de `backend/`:
+   ```bash
+   cd backend
+   composer create-project laravel/laravel .
+   ```
+2. Instalar pacotes adicionais:
+   ```bash
+   composer require spatie/laravel-permission spatie/browsershot laravel/telescope
+   composer require web-token/jwt-framework:^3.2
+   ```
+3. Mesclar os ficheiros de `backend/custom/` com o projecto gerado (middleware, modelos, migrações, job, serviço, view e
+   rotas).
+4. Actualizar o `composer.json` com as dependências listadas em `backend/composer.stub.json` (se alguma estiver em falta).
+5. Copiar `.env.example` para `.env`, ajustar credenciais e caminhos (MySQL, Chrome, certificado `.p12`).
+6. Gerar chave e executar migrações:
+   ```bash
+   php artisan key:generate
+   php artisan migrate
+   php artisan queue:table
+   php artisan migrate
+   php artisan queue:work
+   ```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f8345743-967d-44c6-ad33-3f76d0dd37b6) and start prompting.
+O backend inclui:
+- Migrações para séries, faturas, linhas, chaves de idempotência, submissões AGT e armazenamento de chaves.
+- Modelos Eloquent para cada entidade.
+- Middleware que valida o cabeçalho `X-Idempotency-Key` e evita duplicação de requisições POST.
+- Serviço `JwsSigner` que lê o certificado `.p12`, constrói o cabeçalho `x5c` e assina payloads no algoritmo `PS256`.
+- Job `SubmitInvoiceToAgt` com tentativas e backoff progressivo usando a fila de base de dados.
+- Controladores para séries e emissão de faturas com transacção e bloqueio optimista da numeração.
+- View Blade `pdf/invoice.blade.php` preparada para o Spatie Browsershot gerar o PDF.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Frontend (Next.js 14 PWA)
 
-**Use your preferred IDE**
+1. Instalar dependências:
+   ```bash
+   cd web
+   npm install
+   ```
+2. Criar um ficheiro `.env.local` com o endpoint da API, se necessário:
+   ```env
+   NEXT_PUBLIC_BACKEND_URL=http://localhost:8000/api
+   ```
+3. Executar o servidor de desenvolvimento:
+   ```bash
+   npm run dev
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Funcionalidades principais do PWA:
+- Manifesto e service worker (`public/sw.js`) com sincronização em background para faturas emitidas offline.
+- IndexedDB via Dexie (`src/lib/offline/db.ts`) para guardar submissões pendentes.
+- Formulário React Hook Form + Zod para criar faturas e despachar para o backend ou para a fila offline.
+- Provider do React Query para gerir chamadas e cache.
+- API route `/api/invoices/issue` que serve de proxy para o Laravel, mantendo o cabeçalho de idempotência.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Convenções de UI
 
-Follow these steps:
+Os estilos base usam Tailwind CSS. A classe utilitária `.input` foi criada em `app/globals.css` para inputs com bordas e
+focus consistente.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Fluxo recomendado
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. Criar séries e emitir faturas através do frontend (`npm run dev`) conectado à API (`php artisan serve`).
+2. Deixar o PWA offline, emitir novas faturas — elas serão guardadas no IndexedDB.
+3. Restaurar ligação para que o service worker reenvie as operações (evento `sync`).
+4. Consultar a tabela `agt_submissions` no backend para ver respostas e reenviar via painel "Centro de Erros"
+   (pendente para próximo passo).
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Próximos passos sugeridos
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/f8345743-967d-44c6-ad33-3f76d0dd37b6) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- Página no frontend para listar submissões rejeitadas e acionar `SubmitInvoiceToAgt` novamente.
+- Configurar endpoint real da AGT e certificados definitivos.
+- Adicionar validação SAF-T/XSD antes de submeter documentos em lote.

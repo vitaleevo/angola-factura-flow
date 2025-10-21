@@ -7,7 +7,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node
 node_modules
+web/node_modules
+web/.next
+web/out
+
+# PHP / Laravel
+backend/vendor
+backend/storage
+backend/bootstrap/cache
+backend/node_modules
+
+# Builds
+.dist
+.dist-ssr
 dist
 dist-ssr
 *.local
