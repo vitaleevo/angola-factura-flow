@@ -1787,7 +1787,23 @@ export type Database = {
         Args: { _module_key: string; _org_id: string }
         Returns: boolean
       }
-      has_role: {
+      has_role:
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _org_id: string
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+      has_role_in_org: {
         Args: {
           _org_id: string
           _role: Database["public"]["Enums"]["app_role"]
