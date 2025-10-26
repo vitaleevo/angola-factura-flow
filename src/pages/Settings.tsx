@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MainLayout } from "@/components/Layout/MainLayout";
 
 export default function Settings() {
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <SettingsIcon className="w-8 h-8 text-primary" />
@@ -285,5 +287,6 @@ export default function Settings() {
         </TabsContent>
       </Tabs>
     </div>
+    </MainLayout>
   );
 }

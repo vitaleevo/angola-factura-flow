@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CreditCard, Search, Filter, CheckCircle, Clock, XCircle } from "lucide-react";
+import { MainLayout } from "@/components/Layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -96,7 +97,8 @@ export default function Payments() {
   };
 
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
@@ -182,5 +184,6 @@ export default function Payments() {
         </Table>
       </div>
     </div>
+    </MainLayout>
   );
 }

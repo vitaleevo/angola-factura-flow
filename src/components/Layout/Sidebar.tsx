@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   FileText, 
@@ -7,9 +7,11 @@ import {
   Settings, 
   Cloud,
   CreditCard,
-  AlertCircle
+  AlertCircle,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -24,6 +26,7 @@ const navigation = [
 
 export const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-card border-r border-border">
@@ -59,15 +62,22 @@ export const Sidebar = () => {
       </nav>
 
       <div className="px-6 py-4 border-t border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-            <span className="text-xs font-medium text-foreground">AC</span>
+        <Button
+          variant="ghost"
+          className="w-full justify-start p-0 h-auto hover:bg-transparent"
+          onClick={() => navigate('/perfil')}
+        >
+          <div className="flex items-center gap-3 w-full">
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+              <span className="text-xs font-medium text-foreground">AC</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">Admin Conta</p>
+              <p className="text-xs text-muted-foreground truncate">admin@empresa.ao</p>
+            </div>
+            <User className="w-4 h-4 text-muted-foreground" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">Admin Conta</p>
-            <p className="text-xs text-muted-foreground truncate">admin@empresa.ao</p>
-          </div>
-        </div>
+        </Button>
       </div>
     </aside>
   );

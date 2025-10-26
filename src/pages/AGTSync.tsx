@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { MainLayout } from "@/components/Layout/MainLayout";
 
 const syncHistory = [
   {
@@ -66,7 +67,8 @@ export default function AGTSync() {
   };
 
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
@@ -199,5 +201,6 @@ export default function AGTSync() {
         </CardContent>
       </Card>
     </div>
+    </MainLayout>
   );
 }

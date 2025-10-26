@@ -12,6 +12,7 @@ import Payments from "./pages/Payments";
 import AGTSync from "./pages/AGTSync";
 import Settings from "./pages/Settings";
 import ErrorCenter from "./pages/ErrorCenter";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { useEffect } from "react";
 import { setupOnlineListener } from "./lib/sync";
@@ -45,6 +46,7 @@ const App = () => {
             <Route path="/agt" element={<AGTSync />} />
             <Route path="/centro-erros" element={<ErrorCenter />} />
             <Route path="/configuracoes" element={<Settings />} />
+            <Route path="/perfil" element={<Profile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
