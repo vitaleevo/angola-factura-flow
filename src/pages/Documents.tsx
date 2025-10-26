@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, Search, Filter, Download, Eye, Edit, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/contexts/OrganizationContext";
+import { toast } from "sonner";
 import { MainLayout } from "@/components/Layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,57 +23,103 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const mockDocuments = [
-  {
-    id: "FT 2025/001",
-    type: "FT",
-    client: "Empresa ABC Lda",
-    date: "2025-03-15",
-    total: "150.000,00 Kz",
-    status: "Registado",
-  },
-  {
-    id: "FT 2025/002",
-    type: "FT",
-    client: "Comércio XYZ",
-    date: "2025-03-14",
-    total: "89.500,00 Kz",
-    status: "Registado",
-  },
-  {
-    id: "FR 2025/001",
-    type: "FR",
-    client: "Cliente Teste",
-    date: "2025-03-14",
-    total: "45.000,00 Kz",
-    status: "Pendente",
-  },
-  {
-    id: "NC 2025/001",
-    type: "NC",
-    client: "Empresa ABC Lda",
-    date: "2025-03-13",
-    total: "12.000,00 Kz",
-    status: "Rejeitado",
-  },
-];
+interface Invoice {
+  id: number;
+  invoice_number: string;
+  client_id: number;
+  issue_date: string;
+  total_amount: number;
+  status: string;
+  clients: {
+    name: string;
+  };
+}
 
 export default function Documents() {
+  const { currentOrganization } = useOrganization();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
 
+  useEffect(() => {
+    if (currentOrganization) {
+      loadInvoices();
+    }
+  }, [currentOrganization]);
+
+  const loadInvoices = async () => {
+    if (!currentOrganization) return;
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("invoices")
+      .select(`
+        *,
+        clients (
+          name
+        )
+      `)
+      .eq("organization_id", currentOrganization.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast.error("Erro ao carregar documentos: " + error.message);
+      console.error("Error loading invoices:", error);
+    } else {
+      setInvoices(data || []);
+    }
+    setLoading(false);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-AO', {
+      style: 'currency',
+      currency: 'AOA',
+    }).format(price);
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('pt-AO');
+  };
+
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      Registado: "default",
-      Pendente: "secondary",
-      Rejeitado: "destructive",
+    const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+      draft: { label: "Rascunho", variant: "secondary" },
+      sent: { label: "Enviado", variant: "default" },
+      paid: { label: "Pago", variant: "default" },
+      overdue: { label: "Atrasado", variant: "destructive" },
+      cancelled: { label: "Cancelado", variant: "destructive" },
     };
+
+    const statusInfo = statusMap[status] || { label: status, variant: "default" as const };
+    
     return (
-      <Badge variant={variants[status] || "default"}>
-        {status}
+      <Badge variant={statusInfo.variant}>
+        {statusInfo.label}
       </Badge>
     );
   };
+
+  const filteredInvoices = invoices.filter((invoice) => {
+    const matchesSearch =
+      invoice.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      invoice.clients.name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesFilter = filterType === "all" || invoice.status === filterType;
+    
+    return matchesSearch && matchesFilter;
+  });
+
+  if (!currentOrganization) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-96">
+          <p className="text-muted-foreground">Selecione uma organização</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -108,10 +157,11 @@ export default function Documents() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="FT">Fatura (FT)</SelectItem>
-            <SelectItem value="FR">Fatura Recibo (FR)</SelectItem>
-            <SelectItem value="NC">Nota de Crédito (NC)</SelectItem>
-            <SelectItem value="ND">Nota de Débito (ND)</SelectItem>
+            <SelectItem value="draft">Rascunho</SelectItem>
+            <SelectItem value="sent">Enviado</SelectItem>
+            <SelectItem value="paid">Pago</SelectItem>
+            <SelectItem value="overdue">Atrasado</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline">
@@ -121,49 +171,58 @@ export default function Documents() {
       </div>
 
       <div className="rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Número</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockDocuments.map((doc) => (
-              <TableRow key={doc.id}>
-                <TableCell className="font-medium">{doc.id}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{doc.type}</Badge>
-                </TableCell>
-                <TableCell>{doc.client}</TableCell>
-                <TableCell>{doc.date}</TableCell>
-                <TableCell>{doc.total}</TableCell>
-                <TableCell>{getStatusBadge(doc.status)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="icon">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </TableCell>
+        {loading ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Carregando...</p>
+            </div>
+          </div>
+        ) : filteredInvoices.length === 0 ? (
+          <div className="flex items-center justify-center p-8">
+            <p className="text-muted-foreground">Nenhum documento encontrado</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Número</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredInvoices.map((invoice) => (
+                <TableRow key={invoice.id}>
+                  <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                  <TableCell>{invoice.clients.name}</TableCell>
+                  <TableCell>{formatDate(invoice.issue_date)}</TableCell>
+                  <TableCell>{formatPrice(invoice.total_amount)}</TableCell>
+                  <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="icon">
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
     </MainLayout>
