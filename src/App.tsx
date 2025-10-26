@@ -3,7 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { OrganizationProvider } from "@/contexts/OrganizationContext";
+import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
+import { ModuleGuard } from "@/components/Auth/ModuleGuard";
 import Index from "./pages/Index";
+import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
 import NewDocument from "./pages/NewDocument";
 import Documents from "./pages/Documents";
 import Clients from "./pages/Clients";
@@ -36,20 +42,30 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/novo-documento" element={<NewDocument />} />
-            <Route path="/documentos" element={<Documents />} />
-            <Route path="/clientes" element={<Clients />} />
-            <Route path="/produtos" element={<Products />} />
-            <Route path="/pagamentos" element={<Payments />} />
-            <Route path="/agt" element={<AGTSync />} />
-            <Route path="/centro-erros" element={<ErrorCenter />} />
-            <Route path="/configuracoes" element={<Settings />} />
-            <Route path="/perfil" element={<Profile />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AuthProvider>
+            <OrganizationProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+
+                {/* Protected routes */}
+                <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/novo-documento" element={<ProtectedRoute><ModuleGuard moduleKey="documents"><NewDocument /></ModuleGuard></ProtectedRoute>} />
+                <Route path="/documentos" element={<ProtectedRoute><ModuleGuard moduleKey="documents"><Documents /></ModuleGuard></ProtectedRoute>} />
+                <Route path="/clientes" element={<ProtectedRoute><ModuleGuard moduleKey="crm"><Clients /></ModuleGuard></ProtectedRoute>} />
+                <Route path="/produtos" element={<ProtectedRoute><ModuleGuard moduleKey="products"><Products /></ModuleGuard></ProtectedRoute>} />
+                <Route path="/pagamentos" element={<ProtectedRoute><ModuleGuard moduleKey="payments"><Payments /></ModuleGuard></ProtectedRoute>} />
+                <Route path="/agt" element={<ProtectedRoute><ModuleGuard moduleKey="agt_sync"><AGTSync /></ModuleGuard></ProtectedRoute>} />
+                <Route path="/centro-erros" element={<ProtectedRoute><ModuleGuard moduleKey="error_center"><ErrorCenter /></ModuleGuard></ProtectedRoute>} />
+                <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </OrganizationProvider>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

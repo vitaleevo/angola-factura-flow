@@ -8,25 +8,37 @@ import {
   Cloud,
   CreditCard,
   AlertCircle,
-  User
+  User,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useOrganization } from "@/contexts/OrganizationContext";
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Documentos", href: "/documentos", icon: FileText },
-  { name: "Clientes", href: "/clientes", icon: Users },
-  { name: "Produtos", href: "/produtos", icon: Package },
-    { name: "Pagamentos", href: "/pagamentos", icon: CreditCard },
-    { name: "Sincronização AGT", href: "/agt", icon: Cloud },
-    { name: "Centro de Erros", href: "/centro-erros", icon: AlertCircle },
-    { name: "Configurações", href: "/configuracoes", icon: Settings },
+// Module configuration - maps routes to required modules
+const navigationConfig = [
+  { name: "Dashboard", href: "/", icon: LayoutDashboard, module: null },
+  { name: "Documentos", href: "/documentos", icon: FileText, module: "documents" },
+  { name: "Clientes", href: "/clientes", icon: Users, module: "crm" },
+  { name: "Produtos", href: "/produtos", icon: Package, module: "products" },
+  { name: "Pagamentos", href: "/pagamentos", icon: CreditCard, module: "payments" },
+  { name: "Sincronização AGT", href: "/agt", icon: Cloud, module: "agt_sync" },
+  { name: "Centro de Erros", href: "/centro-erros", icon: AlertCircle, module: "error_center" },
+  { name: "Configurações", href: "/configuracoes", icon: Settings, module: null },
 ];
 
 export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { currentOrganization, enabledModules } = useOrganization();
+
+  // Filter navigation based on enabled modules
+  const navigation = navigationConfig.filter((item) => {
+    if (!item.module) return true; // Always show items without module requirement
+    return enabledModules.has(item.module);
+  });
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-card border-r border-border">
@@ -61,22 +73,31 @@ export const Sidebar = () => {
         })}
       </nav>
 
-      <div className="px-6 py-4 border-t border-border">
+      <div className="px-4 py-4 border-t border-border space-y-2">
         <Button
           variant="ghost"
-          className="w-full justify-start p-0 h-auto hover:bg-transparent"
+          className="w-full justify-start"
           onClick={() => navigate('/perfil')}
         >
-          <div className="flex items-center gap-3 w-full">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-              <span className="text-xs font-medium text-foreground">AC</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">Admin Conta</p>
-              <p className="text-xs text-muted-foreground truncate">admin@empresa.ao</p>
-            </div>
-            <User className="w-4 h-4 text-muted-foreground" />
+          <User className="w-4 h-4 mr-2" />
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-medium text-foreground truncate">
+              {user?.email?.split('@')[0] || 'Usuário'}
+            </p>
+            {currentOrganization && (
+              <p className="text-xs text-muted-foreground truncate">
+                {currentOrganization.name}
+              </p>
+            )}
           </div>
+        </Button>
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={signOut}
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Sair
         </Button>
       </div>
     </aside>
